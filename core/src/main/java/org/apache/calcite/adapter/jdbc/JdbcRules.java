@@ -35,7 +35,6 @@ import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.core.Calc;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Intersect;
@@ -48,6 +47,16 @@ import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.rel.core.Values;
+import org.apache.calcite.rel.logical.LogicalAggregate;
+import org.apache.calcite.rel.logical.LogicalCalc;
+import org.apache.calcite.rel.logical.LogicalFilter;
+import org.apache.calcite.rel.logical.LogicalIntersect;
+import org.apache.calcite.rel.logical.LogicalJoin;
+import org.apache.calcite.rel.logical.LogicalMinus;
+import org.apache.calcite.rel.logical.LogicalProject;
+import org.apache.calcite.rel.logical.LogicalTableModify;
+import org.apache.calcite.rel.logical.LogicalUnion;
+import org.apache.calcite.rel.logical.LogicalValues;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
@@ -112,35 +121,23 @@ public class JdbcRules {
   }
 
   /** Rule that converts a join to JDBC. */
-  public static class JdbcJoinRule extends JdbcConverterRule {
-    /** Creates a JdbcJoinRule. */
-    public JdbcJoinRule(JdbcConvention out) {
-      super(Join.class, Convention.NONE, out, "JdbcJoinRule");
+  private static class JdbcJoinRule extends JdbcConverterRule {
+    private JdbcJoinRule(JdbcConvention out) {
+      super(LogicalJoin.class, Convention.NONE, out, "JdbcJoinRule");
     }
 
     @Override public RelNode convert(RelNode rel) {
-      return convert((Join) rel, true);
-    }
-
-    /**
-     * Converts a {@code Join} into a {@code JdbcJoin}.
-     *
-     * @param join Join operator to convert
-     * @param convertInputTraits Whether to convert input to {@code join}'s
-     *                            JDBC convention
-     * @return A new JdbcJoin
-     */
-    public RelNode convert(Join join, boolean convertInputTraits) {
+      LogicalJoin join = (LogicalJoin) rel;
       final List<RelNode> newInputs = new ArrayList<>();
       for (RelNode input : join.getInputs()) {
-        if (convertInputTraits && input.getConvention() != getOutTrait()) {
+        if (!(input.getConvention() == getOutTrait())) {
           input =
               convert(input,
                   input.getTraitSet().replace(out));
         }
         newInputs.add(input);
       }
-      if (convertInputTraits && !canJoinOnCondition(join.getCondition())) {
+      if (!canJoinOnCondition(join.getCondition())) {
         return null;
       }
       try {
@@ -203,7 +200,7 @@ public class JdbcRules {
   /** Join operator implemented in JDBC convention. */
   public static class JdbcJoin extends Join implements JdbcRel {
     /** Creates a JdbcJoin. */
-    public JdbcJoin(RelOptCluster cluster, RelTraitSet traitSet,
+    protected JdbcJoin(RelOptCluster cluster, RelTraitSet traitSet,
         RelNode left, RelNode right, RexNode condition,
         Set<CorrelationId> variablesSet, JoinRelType joinType)
         throws InvalidRelException {
@@ -257,16 +254,16 @@ public class JdbcRules {
   }
 
   /**
-   * Rule to convert a {@link org.apache.calcite.rel.core.Calc} to an
+   * Rule to convert a {@link org.apache.calcite.rel.logical.LogicalCalc} to an
    * {@link org.apache.calcite.adapter.jdbc.JdbcRules.JdbcCalc}.
    */
   private static class JdbcCalcRule extends JdbcConverterRule {
     private JdbcCalcRule(JdbcConvention out) {
-      super(Calc.class, Convention.NONE, out, "JdbcCalcRule");
+      super(LogicalCalc.class, Convention.NONE, out, "JdbcCalcRule");
     }
 
     public RelNode convert(RelNode rel) {
-      final Calc calc = (Calc) rel;
+      final LogicalCalc calc = (LogicalCalc) rel;
 
       // If there's a multiset, let FarragoMultisetSplitter work on it
       // first.
@@ -330,16 +327,16 @@ public class JdbcRules {
   }
 
   /**
-   * Rule to convert a {@link org.apache.calcite.rel.core.Project} to
+   * Rule to convert a {@link org.apache.calcite.rel.logical.LogicalProject} to
    * an {@link org.apache.calcite.adapter.jdbc.JdbcRules.JdbcProject}.
    */
-  public static class JdbcProjectRule extends JdbcConverterRule {
-    public JdbcProjectRule(JdbcConvention out) {
-      super(Project.class, Convention.NONE, out, "JdbcProjectRule");
+  private static class JdbcProjectRule extends JdbcConverterRule {
+    private JdbcProjectRule(JdbcConvention out) {
+      super(LogicalProject.class, Convention.NONE, out, "JdbcProjectRule");
     }
 
     public RelNode convert(RelNode rel) {
-      final Project project = (Project) rel;
+      final LogicalProject project = (LogicalProject) rel;
 
       return new JdbcProject(
           rel.getCluster(),
@@ -352,7 +349,7 @@ public class JdbcRules {
     }
   }
 
-  /** Implementation of {@link org.apache.calcite.rel.core.Project} in
+  /** Implementation of {@link org.apache.calcite.rel.logical.LogicalProject} in
    * {@link JdbcConvention jdbc calling convention}. */
   public static class JdbcProject
       extends Project
@@ -391,16 +388,16 @@ public class JdbcRules {
   }
 
   /**
-   * Rule to convert a {@link org.apache.calcite.rel.core.Filter} to
+   * Rule to convert a {@link org.apache.calcite.rel.logical.LogicalFilter} to
    * an {@link org.apache.calcite.adapter.jdbc.JdbcRules.JdbcFilter}.
    */
-  public static class JdbcFilterRule extends JdbcConverterRule {
-    public JdbcFilterRule(JdbcConvention out) {
-      super(Filter.class, Convention.NONE, out, "JdbcFilterRule");
+  private static class JdbcFilterRule extends JdbcConverterRule {
+    private JdbcFilterRule(JdbcConvention out) {
+      super(LogicalFilter.class, Convention.NONE, out, "JdbcFilterRule");
     }
 
     public RelNode convert(RelNode rel) {
-      final Filter filter = (Filter) rel;
+      final LogicalFilter filter = (LogicalFilter) rel;
 
       return new JdbcFilter(
           rel.getCluster(),
@@ -434,16 +431,16 @@ public class JdbcRules {
   }
 
   /**
-   * Rule to convert a {@link org.apache.calcite.rel.core.Aggregate}
+   * Rule to convert a {@link org.apache.calcite.rel.logical.LogicalAggregate}
    * to a {@link org.apache.calcite.adapter.jdbc.JdbcRules.JdbcAggregate}.
    */
-  public static class JdbcAggregateRule extends JdbcConverterRule {
-    public JdbcAggregateRule(JdbcConvention out) {
-      super(Aggregate.class, Convention.NONE, out, "JdbcAggregateRule");
+  private static class JdbcAggregateRule extends JdbcConverterRule {
+    private JdbcAggregateRule(JdbcConvention out) {
+      super(LogicalAggregate.class, Convention.NONE, out, "JdbcAggregateRule");
     }
 
     public RelNode convert(RelNode rel) {
-      final Aggregate agg = (Aggregate) rel;
+      final LogicalAggregate agg = (LogicalAggregate) rel;
       if (agg.getGroupSets().size() != 1) {
         // GROUPING SETS not supported; see
         // [CALCITE-734] Push GROUPING SETS to underlying SQL via JDBC adapter
@@ -514,36 +511,17 @@ public class JdbcRules {
    * Rule to convert a {@link org.apache.calcite.rel.core.Sort} to an
    * {@link org.apache.calcite.adapter.jdbc.JdbcRules.JdbcSort}.
    */
-  public static class JdbcSortRule extends JdbcConverterRule {
-    /** Creates a JdbcSortRule. */
-    public JdbcSortRule(JdbcConvention out) {
+  private static class JdbcSortRule extends JdbcConverterRule {
+    private JdbcSortRule(JdbcConvention out) {
       super(Sort.class, Convention.NONE, out, "JdbcSortRule");
     }
 
     public RelNode convert(RelNode rel) {
-      return convert((Sort) rel, true);
-    }
-
-    /**
-     * Converts a {@code Sort} into a {@code JdbcSort}.
-     *
-     * @param sort Sort operator to convert
-     * @param convertInputTraits Whether to convert input to {@code sort}'s
-     *                            JDBC convention
-     * @return A new JdbcSort
-     */
-    public RelNode convert(Sort sort, boolean convertInputTraits) {
+      final Sort sort = (Sort) rel;
       final RelTraitSet traitSet = sort.getTraitSet().replace(out);
-
-      final RelNode input;
-      if (convertInputTraits) {
-        input = convert(sort.getInput(), traitSet);
-      } else {
-        input = sort.getInput();
-      }
-
-      return new JdbcSort(sort.getCluster(), traitSet,
-          input, sort.getCollation(), sort.offset, sort.fetch);
+      return new JdbcSort(rel.getCluster(), traitSet,
+          convert(sort.getInput(), traitSet), sort.getCollation(), sort.offset,
+          sort.fetch);
     }
   }
 
@@ -575,16 +553,16 @@ public class JdbcRules {
   }
 
   /**
-   * Rule to convert an {@link org.apache.calcite.rel.core.Union} to a
+   * Rule to convert an {@link org.apache.calcite.rel.logical.LogicalUnion} to a
    * {@link org.apache.calcite.adapter.jdbc.JdbcRules.JdbcUnion}.
    */
-  public static class JdbcUnionRule extends JdbcConverterRule {
-    public JdbcUnionRule(JdbcConvention out) {
-      super(Union.class, Convention.NONE, out, "JdbcUnionRule");
+  private static class JdbcUnionRule extends JdbcConverterRule {
+    private JdbcUnionRule(JdbcConvention out) {
+      super(LogicalUnion.class, Convention.NONE, out, "JdbcUnionRule");
     }
 
     public RelNode convert(RelNode rel) {
-      final Union union = (Union) rel;
+      final LogicalUnion union = (LogicalUnion) rel;
       final RelTraitSet traitSet =
           union.getTraitSet().replace(out);
       return new JdbcUnion(rel.getCluster(), traitSet,
@@ -618,16 +596,16 @@ public class JdbcRules {
   }
 
   /**
-   * Rule to convert a {@link org.apache.calcite.rel.core.Intersect}
+   * Rule to convert a {@link org.apache.calcite.rel.logical.LogicalIntersect}
    * to a {@link org.apache.calcite.adapter.jdbc.JdbcRules.JdbcIntersect}.
    */
-  public static class JdbcIntersectRule extends JdbcConverterRule {
+  private static class JdbcIntersectRule extends JdbcConverterRule {
     private JdbcIntersectRule(JdbcConvention out) {
-      super(Intersect.class, Convention.NONE, out, "JdbcIntersectRule");
+      super(LogicalIntersect.class, Convention.NONE, out, "JdbcIntersectRule");
     }
 
     public RelNode convert(RelNode rel) {
-      final Intersect intersect = (Intersect) rel;
+      final LogicalIntersect intersect = (LogicalIntersect) rel;
       if (intersect.all) {
         return null; // INTERSECT ALL not implemented
       }
@@ -662,16 +640,16 @@ public class JdbcRules {
   }
 
   /**
-   * Rule to convert a {@link org.apache.calcite.rel.core.Minus} to a
+   * Rule to convert a {@link org.apache.calcite.rel.logical.LogicalMinus} to a
    * {@link org.apache.calcite.adapter.jdbc.JdbcRules.JdbcMinus}.
    */
-  public static class JdbcMinusRule extends JdbcConverterRule {
+  private static class JdbcMinusRule extends JdbcConverterRule {
     private JdbcMinusRule(JdbcConvention out) {
-      super(Minus.class, Convention.NONE, out, "JdbcMinusRule");
+      super(LogicalMinus.class, Convention.NONE, out, "JdbcMinusRule");
     }
 
     public RelNode convert(RelNode rel) {
-      final Minus minus = (Minus) rel;
+      final LogicalMinus minus = (LogicalMinus) rel;
       if (minus.all) {
         return null; // EXCEPT ALL not implemented
       }
@@ -703,16 +681,20 @@ public class JdbcRules {
   /** Rule that converts a table-modification to JDBC. */
   public static class JdbcTableModificationRule extends JdbcConverterRule {
     private JdbcTableModificationRule(JdbcConvention out) {
-      super(TableModify.class, Convention.NONE, out,
+      super(
+          LogicalTableModify.class,
+          Convention.NONE,
+          out,
           "JdbcTableModificationRule");
     }
 
     @Override public RelNode convert(RelNode rel) {
-      final TableModify modify =
-          (TableModify) rel;
+      final LogicalTableModify modify =
+          (LogicalTableModify) rel;
       final ModifiableTable modifiableTable =
           modify.getTable().unwrap(ModifiableTable.class);
-      if (modifiableTable == null) {
+      if (modifiableTable == null
+          /* || modifiableTable.getExpression(tableInSchema) == null */) {
         return null;
       }
       final RelTraitSet traitSet =
@@ -777,11 +759,11 @@ public class JdbcRules {
   /** Rule that converts a values operator to JDBC. */
   public static class JdbcValuesRule extends JdbcConverterRule {
     private JdbcValuesRule(JdbcConvention out) {
-      super(Values.class, Convention.NONE, out, "JdbcValuesRule");
+      super(LogicalValues.class, Convention.NONE, out, "JdbcValuesRule");
     }
 
     @Override public RelNode convert(RelNode rel) {
-      Values values = (Values) rel;
+      LogicalValues values = (LogicalValues) rel;
       return new JdbcValues(values.getCluster(), values.getRowType(),
           values.getTuples(), values.getTraitSet().replace(out));
     }
