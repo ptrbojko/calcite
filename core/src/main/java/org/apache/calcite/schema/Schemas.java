@@ -17,6 +17,8 @@
 package org.apache.calcite.schema;
 
 import org.apache.calcite.DataContext;
+import org.apache.calcite.access.CalcitePrincipal;
+import org.apache.calcite.access.CalcitePrincipalImpl;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
@@ -399,6 +401,7 @@ public final class Schemas {
       final List<String> schemaPath, final List<String> objectPath_) {
     final ImmutableList<String> objectPath =
         objectPath_ == null ? null : ImmutableList.copyOf(objectPath_);
+    final CalcitePrincipal principal = CalcitePrincipalImpl.fromName(connectionConfig.user());
     return new CalcitePrepare.Context() {
       public JavaTypeFactory getTypeFactory() {
         return typeFactory;
@@ -440,6 +443,10 @@ public final class Schemas {
       public CalcitePrepare.SparkHandler spark() {
         final boolean enable = config().spark();
         return CalcitePrepare.Dummy.getSparkHandler(enable);
+      }
+
+      public CalcitePrincipal getPrincipal() {
+        return principal;
       }
     };
   }

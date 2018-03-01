@@ -16,6 +16,8 @@
  */
 package org.apache.calcite.test;
 
+import org.apache.calcite.access.AlwaysPassGuard;
+import org.apache.calcite.access.AuthorizationGuard;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
@@ -342,6 +344,10 @@ public abstract class SqlToRelTestBase {
     }
 
     public void registerRules(RelOptPlanner planner) throws Exception {
+    }
+
+    @Override public AuthorizationGuard getGuard() {
+      return AlwaysPassGuard.INSTANCE;
     }
 
     /** Mock column set. */

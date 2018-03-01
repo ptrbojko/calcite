@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.prepare;
 
+import org.apache.calcite.access.AuthorizationGuard;
 import org.apache.calcite.adapter.enumerable.EnumerableTableScan;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -50,7 +51,6 @@ import org.apache.calcite.schema.StreamableTable;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.Wrapper;
-import org.apache.calcite.sql.SqlAccessType;
 import org.apache.calcite.sql.validate.SqlModality;
 import org.apache.calcite.sql.validate.SqlMonotonicity;
 import org.apache.calcite.sql2rel.InitializerExpressionFactory;
@@ -361,10 +361,6 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     return SqlMonotonicity.NOT_MONOTONIC;
   }
 
-  public SqlAccessType getAllowedAccess() {
-    return SqlAccessType.ALL;
-  }
-
   /** Helper for {@link #getColumnStrategies()}. */
   public static List<ColumnStrategy> columnStrategies(final RelOptTable table) {
     final int fieldCount = table.getRowType().getFieldCount();
@@ -413,6 +409,10 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
       }
     }
     return builder.build();
+  }
+
+  @Override public AuthorizationGuard getGuard() {
+    return schema.getGuard();
   }
 
   /** Implementation of {@link SchemaPlus} that wraps a regular schema and knows
@@ -520,6 +520,10 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
 
     @Override public Schema snapshot(SchemaVersion version) {
       throw new UnsupportedOperationException();
+    }
+
+    @Override public void setGuard(AuthorizationGuard guard) {
+      throw new UnsupportedOperationException("Not supported yet.");
     }
   }
 }

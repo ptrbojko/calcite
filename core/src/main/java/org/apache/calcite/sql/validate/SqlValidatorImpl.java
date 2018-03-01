@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.sql.validate;
 
+import org.apache.calcite.access.AuthorizationGuard;
 import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.linq4j.Ord;
@@ -43,7 +44,6 @@ import org.apache.calcite.schema.impl.ModifiableViewTable;
 import org.apache.calcite.sql.JoinConditionType;
 import org.apache.calcite.sql.JoinType;
 import org.apache.calcite.sql.SqlAccessEnum;
-import org.apache.calcite.sql.SqlAccessType;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlCallBinding;
@@ -4550,8 +4550,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       SqlValidatorTable table,
       SqlAccessEnum requiredAccess) {
     if (table != null) {
-      SqlAccessType access = table.getAllowedAccess();
-      if (!access.allowsAccess(requiredAccess)) {
+      AuthorizationGuard guard = table.getGuard();
+      if (!guard.accessGranted(requiredAccess)) {
         throw newValidationError(node,
             RESOURCE.accessNotAllowed(requiredAccess.name(),
                 table.getQualifiedName().toString()));

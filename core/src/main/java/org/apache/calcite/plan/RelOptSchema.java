@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.plan;
 
+import org.apache.calcite.access.AuthorizationGuard;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 
 import java.util.List;
@@ -51,6 +52,9 @@ public interface RelOptSchema {
    * {@link RelOptPlanner#registerSchema}.
    */
   void registerRules(RelOptPlanner planner) throws Exception;
+
+  /** Access guard configured for this schema */
+  AuthorizationGuard getGuard();
 }
 
 // End RelOptSchema.java

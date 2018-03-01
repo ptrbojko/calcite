@@ -17,6 +17,7 @@
 package org.apache.calcite.prepare;
 
 import org.apache.calcite.DataContext;
+import org.apache.calcite.access.CalcitePrincipalFairy;
 import org.apache.calcite.adapter.enumerable.EnumerableBindable;
 import org.apache.calcite.adapter.enumerable.EnumerableCalc;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
@@ -286,6 +287,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     } catch (SqlParseException e) {
       throw new RuntimeException("parse failed", e);
     }
+    CalcitePrincipalFairy.INSTANCE.register(context.getPrincipal());
     final SqlValidator validator = createSqlValidator(context, catalogReader);
     SqlNode sqlNode1 = validator.validate(sqlNode);
     if (convert) {

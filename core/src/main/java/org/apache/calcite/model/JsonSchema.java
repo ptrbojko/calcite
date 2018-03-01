@@ -62,6 +62,11 @@ public abstract class JsonSchema {
   public List<Object> path;
 
   /**
+   * Access definition to this schema
+   */
+  public JsonAccess access;
+
+  /**
    * List of tables in this schema that are materializations of queries.
    *
    * <p>The list may be empty.
@@ -96,6 +101,9 @@ public abstract class JsonSchema {
     }
     for (JsonMaterialization jsonMaterialization : materializations) {
       jsonMaterialization.accept(modelHandler);
+    }
+    if (access != null) {
+      access.accept(modelHandler);
     }
   }
 

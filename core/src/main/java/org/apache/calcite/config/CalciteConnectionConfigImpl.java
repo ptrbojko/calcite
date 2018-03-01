@@ -82,6 +82,12 @@ public class CalciteConnectionConfigImpl extends ConnectionConfigImpl
         .getEnum(NullCollation.class, NullCollation.HIGH);
   }
 
+  public String user() {
+    return CalciteConnectionProperty.USER
+            .wrap(properties)
+            .getString(System.getProperty("user.name")); // here, because user can change in time
+  }
+
   public <T> T fun(Class<T> operatorTableClass, T defaultOperatorTable) {
     final String fun =
         CalciteConnectionProperty.FUN.wrap(properties).getString();

@@ -16,6 +16,8 @@
  */
 package org.apache.calcite.model;
 
+import org.apache.calcite.access.AuthorisationGuardFactory;
+import org.apache.calcite.access.AuthorizationGuard;
 import org.apache.calcite.adapter.jdbc.JdbcSchema;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.jdbc.CalciteConnection;
@@ -514,6 +516,13 @@ public class ModelHandler {
     }
     latticeBuilder.addTile(tileBuilder.build());
     tileBuilder = null;
+  }
+
+  public void visit(JsonAccess access) {
+    AuthorisationGuardFactory factory
+            = AvaticaUtils.instantiatePlugin(AuthorisationGuardFactory.class, access.factory);
+    AuthorizationGuard guard = factory.create(access.operand);
+    currentSchema().setGuard(guard);
   }
 
   /** Extra operands automatically injected into a

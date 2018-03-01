@@ -17,6 +17,8 @@
 package org.apache.calcite.jdbc;
 
 import org.apache.calcite.DataContext;
+import org.apache.calcite.access.CalcitePrincipal;
+import org.apache.calcite.access.CalcitePrincipalImpl;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaConnection;
 import org.apache.calcite.avatica.AvaticaFactory;
@@ -524,6 +526,10 @@ abstract class CalciteConnectionImpl
     public CalcitePrepare.SparkHandler spark() {
       final boolean enable = config().spark();
       return CalcitePrepare.Dummy.getSparkHandler(enable);
+    }
+
+    public CalcitePrincipal getPrincipal() {
+      return CalcitePrincipalImpl.fromName(connection.config().user());
     }
   }
 

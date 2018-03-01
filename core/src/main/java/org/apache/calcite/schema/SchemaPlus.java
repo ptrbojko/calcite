@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.schema;
 
+import org.apache.calcite.access.AuthorizationGuard;
 import org.apache.calcite.materialize.Lattice;
 
 import com.google.common.collect.ImmutableList;
@@ -81,6 +82,9 @@ public interface SchemaPlus extends Schema {
   void setCacheEnabled(boolean cache);
 
   boolean isCacheEnabled();
+
+  /** Registers guard for this schema */
+  void setGuard(AuthorizationGuard guard);
 }
 
 // End SchemaPlus.java
