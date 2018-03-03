@@ -273,6 +273,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
    * {@link #analyzeView}. */
   private ParseResult parse_(Context context, String sql, boolean convert,
       boolean analyze, boolean fail) {
+    CalcitePrincipalFairy.INSTANCE.register(context.getPrincipal());
     final JavaTypeFactory typeFactory = context.getTypeFactory();
     CalciteCatalogReader catalogReader =
         new CalciteCatalogReader(
@@ -287,7 +288,6 @@ public class CalcitePrepareImpl implements CalcitePrepare {
     } catch (SqlParseException e) {
       throw new RuntimeException("parse failed", e);
     }
-    CalcitePrincipalFairy.INSTANCE.register(context.getPrincipal());
     final SqlValidator validator = createSqlValidator(context, catalogReader);
     SqlNode sqlNode1 = validator.validate(sqlNode);
     if (convert) {
@@ -617,6 +617,7 @@ public class CalcitePrepareImpl implements CalcitePrepare {
       Query<T> query,
       Type elementType,
       long maxRowCount) {
+    CalcitePrincipalFairy.INSTANCE.register(context.getPrincipal());
     if (SIMPLE_SQLS.contains(query.sql)) {
       return simplePrepare(context, query.sql);
     }

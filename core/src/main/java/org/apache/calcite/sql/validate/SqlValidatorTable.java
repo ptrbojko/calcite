@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.sql.validate;
 
-import org.apache.calcite.access.AuthorizationGuard;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.Wrapper;
 import org.apache.calcite.sql2rel.InitializerContext;
@@ -49,9 +48,6 @@ public interface SqlValidatorTable extends Wrapper {
   @Deprecated // to be removed before 2.0
   boolean columnHasDefaultValue(RelDataType rowType, int ordinal,
       InitializerContext initializerContext);
-
-  /** Returns the authorization guard from schema */
-  AuthorizationGuard getGuard();
 }
 
 // End SqlValidatorTable.java

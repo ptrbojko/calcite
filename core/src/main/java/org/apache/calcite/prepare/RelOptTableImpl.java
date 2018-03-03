@@ -411,10 +411,6 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     return builder.build();
   }
 
-  @Override public AuthorizationGuard getGuard() {
-    return schema.getGuard();
-  }
-
   /** Implementation of {@link SchemaPlus} that wraps a regular schema and knows
    * its name and parent.
    *

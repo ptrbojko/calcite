@@ -27,6 +27,10 @@ public class CalcitePrincipalFairy {
           = new ThreadLocal<CalcitePrincipal>();
 
   public void register(CalcitePrincipal principal) {
+    // if someone nulls principal - it can be materialization logic or sthg similiar
+    if (principal == null || principal.getName() == null) {
+      return;
+    }
     THREAD_LOCAL.set(principal);
   }
 

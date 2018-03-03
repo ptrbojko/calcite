@@ -36,6 +36,7 @@ public class PrincipalBasedGuardFactory implements AuthorisationGuardFactory {
     for (Map.Entry<String, Object> entry : operand.entrySet()) {
       String userName = entry.getKey();
       SqlAccessType type = SqlAccessType.create(entry.getValue().toString());
+      result.put(userName, type);
     }
     return result;
   }

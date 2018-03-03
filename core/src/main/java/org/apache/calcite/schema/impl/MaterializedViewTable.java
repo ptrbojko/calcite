@@ -57,7 +57,7 @@ public class MaterializedViewTable extends ViewTable {
 
   static {
     try {
-      MATERIALIZATION_CONNECTION = DriverManager.getConnection("jdbc:calcite:")
+      MATERIALIZATION_CONNECTION = DriverManager.getConnection("jdbc:calcite:", "sa", "sa")
           .unwrap(CalciteConnection.class);
     } catch (SQLException e) {
       throw new RuntimeException(e);

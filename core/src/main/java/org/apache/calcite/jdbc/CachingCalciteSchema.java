@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.jdbc;
 
+import org.apache.calcite.access.AuthorizationGuard;
 import org.apache.calcite.schema.Function;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaVersion;
@@ -223,6 +224,7 @@ class CachingCalciteSchema extends CalciteSchema {
       CalciteSchema subSchemaSnapshot = subSchema.snapshot(snapshot, version);
       snapshot.subSchemaMap.put(subSchema.name, subSchemaSnapshot);
     }
+    snapshot.setGuard(getGuard());
     return snapshot;
   }
 
@@ -308,7 +310,14 @@ class CachingCalciteSchema extends CalciteSchema {
                 throw new RuntimeException("sub-schema " + schemaName
                     + " not found");
               }
-              return new CachingCalciteSchema(calciteSchema, subSchema, schemaName);
+              CachingCalciteSchema cache
+                      = new CachingCalciteSchema(calciteSchema, subSchema, schemaName);
+              try {
+                AuthorizationGuard guard
+                        = calciteSchema.subSchemaMap.map().get(schemaName).getGuard();
+                cache.setGuard(guard);
+              } catch (NullPointerException e) { }
+              return cache;
             }
           });
     }

@@ -36,15 +36,15 @@ public class ConnectionFactory implements Quidem.ConnectionFactory {
    * Wrapping with Fairy environmental decoration
    */
   private enum DBWrapper {
-    CALCITE_AS_ADMIN {
+    CALCITE_WITH_GENERAL_CONDITION {
       @Override public Connection connection() throws Exception {
-        EnvironmentFairy.login(EnvironmentFairy.User.ADMIN);
+        EnvironmentFairy.setCondition(EnvironmentFairy.Condition.GENERAL_CONDITION);
         return CALCITE.connection();
       }
     },
-    CALCITE_AS_SPECIFIC_USER {
+    CALCITE_WITH_SPECIFIC {
       @Override public Connection connection() throws Exception {
-        EnvironmentFairy.login(EnvironmentFairy.User.SPECIFIC_USER);
+        EnvironmentFairy.setCondition(EnvironmentFairy.Condition.SPECIFIC_CONDITION);
         return CALCITE.connection();
       }
     },

@@ -8,7 +8,13 @@
       "jdbcDriver": "org.hsqldb.jdbc.JDBCDriver",
       "jdbcUrl": "jdbc:hsqldb:res:chinook",
       "jdbcUser": "sa",
-      "jdbcPassword": ""
+      "jdbcPassword": "",
+      "access" : {
+        "factory" : "org.apache.calcite.access.PrincipalBasedGuardFactory",
+        "operand" : {
+          "sa" : "SELECT, DELETE, UPDATE, INSERT"
+        }
+      }
     },
     {
       "name": "ENHANCED",

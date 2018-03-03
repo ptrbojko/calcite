@@ -4550,7 +4550,14 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       SqlValidatorTable table,
       SqlAccessEnum requiredAccess) {
     if (table != null) {
-      AuthorizationGuard guard = table.getGuard();
+      List<String> path = table.getQualifiedName();
+      path = path.subList(0, path.size() - 1);
+      CalciteSchema schema
+              = SqlValidatorUtil.getSchema(
+                      catalogReader.getRootSchema(),
+                      path,
+                      catalogReader.nameMatcher());
+      AuthorizationGuard guard = schema.getGuard();
       if (!guard.accessGranted(requiredAccess)) {
         throw newValidationError(node,
             RESOURCE.accessNotAllowed(requiredAccess.name(),

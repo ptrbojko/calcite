@@ -16,8 +16,6 @@
  */
 package org.apache.calcite.test;
 
-import org.apache.calcite.access.CalcitePrincipalFairy;
-import org.apache.calcite.access.CalcitePrincipalImpl;
 import org.apache.calcite.adapter.clone.CloneSchema;
 import org.apache.calcite.adapter.generate.RangeTable;
 import org.apache.calcite.adapter.java.AbstractQueryableTable;
@@ -2424,7 +2422,6 @@ public class JdbcTest {
   }
 
   @Test public void testReuseExpressionWhenNullChecking3() {
-    CalcitePrincipalFairy.INSTANCE.register(CalcitePrincipalImpl.fromName("sa"));
     CalciteAssert.hr()
         .query(
             "select substring(\"name\", \"deptno\"+case when user <> 'sa' then 1 end) from \"hr\".\"emps\"")
@@ -2443,7 +2440,6 @@ public class JdbcTest {
   }
 
   @Test public void testReuseExpressionWhenNullChecking4() {
-    CalcitePrincipalFairy.INSTANCE.register(CalcitePrincipalImpl.fromName("sa"));
     CalciteAssert.hr()
         .query("select substring(trim(\n"
             + "substring(\"name\",\n"
@@ -2479,7 +2475,6 @@ public class JdbcTest {
   }
 
   @Test public void testReuseExpressionWhenNullChecking5() {
-    CalcitePrincipalFairy.INSTANCE.register(CalcitePrincipalImpl.fromName("sa"));
     CalciteAssert.hr()
         .query("select substring(trim(\n"
             + "substring(\"name\",\n"

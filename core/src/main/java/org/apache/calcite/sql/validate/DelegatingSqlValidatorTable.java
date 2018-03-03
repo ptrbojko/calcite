@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.sql.validate;
 
-import org.apache.calcite.access.AuthorizationGuard;
 import org.apache.calcite.rel.type.RelDataType;
 
 import java.util.List;
@@ -49,9 +48,6 @@ public abstract class DelegatingSqlValidatorTable implements SqlValidatorTable {
     return table.getMonotonicity(columnName);
   }
 
-  @Override public AuthorizationGuard getGuard() {
-    return table.getGuard();
-  }
 }
 
 // End DelegatingSqlValidatorTable.java

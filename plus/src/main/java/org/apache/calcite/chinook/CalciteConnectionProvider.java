@@ -45,6 +45,7 @@ public class CalciteConnectionProvider {
     Properties info = new Properties();
     info.setProperty("lex", "MYSQL");
     info.setProperty("model", "inline:" + provideSchema());
+    info.setProperty("user", "sa");
     return info;
   }
 

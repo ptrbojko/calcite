@@ -62,7 +62,7 @@ public class PreferredGenresTableFactory implements TableFactory<AbstractQueryab
   }
 
   private Queryable<Integer> fetchPreferredGenres() {
-    if (EnvironmentFairy.getUser() == EnvironmentFairy.User.SPECIFIC_USER) {
+    if (EnvironmentFairy.getCondition() == EnvironmentFairy.Condition.SPECIFIC_CONDITION) {
       return Linq4j.asEnumerable(SPECIFIC_USER_PREFERRED_GENRES).asQueryable();
     } else {
       return Linq4j.asEnumerable(

@@ -484,7 +484,7 @@ public abstract class CalciteSchema {
     return true;
   }
 
-  private void setGuard(AuthorizationGuard guard) {
+  public void setGuard(AuthorizationGuard guard) {
     this.guard = guard;
   }
 

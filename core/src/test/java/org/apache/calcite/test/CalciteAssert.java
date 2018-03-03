@@ -149,7 +149,7 @@ public class CalciteAssert {
   }
 
   public static final ConnectionFactory EMPTY_CONNECTION_FACTORY =
-      new MapConnectionFactory(ImmutableMap.<String, String>of(),
+      new MapConnectionFactory(ImmutableMap.<String, String>of("user", "sa"),
           ImmutableList.<ConnectionPostProcessor>of());
 
   /** Implementation of {@link AssertThat} that does nothing. */

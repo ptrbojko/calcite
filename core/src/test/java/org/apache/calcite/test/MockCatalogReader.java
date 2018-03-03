@@ -16,8 +16,6 @@
  */
 package org.apache.calcite.test;
 
-import org.apache.calcite.access.AlwaysPassGuard;
-import org.apache.calcite.access.AuthorizationGuard;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.jdbc.CalcitePrepare;
@@ -780,10 +778,6 @@ public class MockCatalogReader extends CalciteCatalogReader {
       for (String name : monotonicColumnSet) {
         addMonotonic(name);
       }
-    }
-
-    @Override public AuthorizationGuard getGuard() {
-      return AlwaysPassGuard.INSTANCE;
     }
 
     /** Implementation of AbstractModifiableTable. */
