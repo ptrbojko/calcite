@@ -18,6 +18,7 @@ package org.apache.calcite.jdbc;
 
 import org.apache.calcite.DataContext;
 import org.apache.calcite.access.CalcitePrincipal;
+import org.apache.calcite.access.CalcitePrincipalFairy;
 import org.apache.calcite.access.CalcitePrincipalImpl;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaConnection;
@@ -134,6 +135,7 @@ abstract class CalciteConnectionImpl
     this.properties.put(InternalProperty.UNQUOTED_CASING, cfg.unquotedCasing());
     this.properties.put(InternalProperty.QUOTED_CASING, cfg.quotedCasing());
     this.properties.put(InternalProperty.QUOTING, cfg.quoting());
+    CalcitePrincipalFairy.INSTANCE.register(CalcitePrincipalImpl.fromName(cfg.user()));
   }
 
   CalciteMetaImpl meta() {

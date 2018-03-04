@@ -37,7 +37,6 @@ public class CalcitePrincipalFairy {
   public CalcitePrincipal get() {
     return THREAD_LOCAL.get();
   }
-
 }
 
 // End CalcitePrincipalFairy.java

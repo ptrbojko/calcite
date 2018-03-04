@@ -17,7 +17,6 @@
 package org.apache.calcite.jdbc;
 
 import org.apache.calcite.DataContext;
-import org.apache.calcite.access.CalcitePrincipal;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -139,11 +138,6 @@ public interface CalcitePrepare {
     /** Gets a runner; it can execute a relational expression. */
     RelRunner getRelRunner();
 
-    /**
-     * Returns the principal responsible for creation of this connection on behalf which this
-     * connections serves data.
-     */
-    CalcitePrincipal getPrincipal();
   }
 
   /** Callback to register Spark as the main engine. */

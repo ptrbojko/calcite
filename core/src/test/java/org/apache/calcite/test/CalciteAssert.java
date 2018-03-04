@@ -149,7 +149,7 @@ public class CalciteAssert {
   }
 
   public static final ConnectionFactory EMPTY_CONNECTION_FACTORY =
-      new MapConnectionFactory(ImmutableMap.<String, String>of("user", "sa"),
+      new MapConnectionFactory(ImmutableMap.<String, String>of(),
           ImmutableList.<ConnectionPostProcessor>of());
 
   /** Implementation of {@link AssertThat} that does nothing. */
@@ -1230,6 +1230,7 @@ public class CalciteAssert {
 
     public Connection createConnection() throws SQLException {
       final Properties info = new Properties();
+      info.put("user", "sa");
       for (Map.Entry<String, String> entry : map.entrySet()) {
         info.setProperty(entry.getKey(), entry.getValue());
       }

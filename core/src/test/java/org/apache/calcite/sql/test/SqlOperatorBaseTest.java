@@ -16,8 +16,6 @@
  */
 package org.apache.calcite.sql.test;
 
-import org.apache.calcite.access.CalcitePrincipalFairy;
-import org.apache.calcite.access.CalcitePrincipalImpl;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.plan.Strong;
@@ -1615,7 +1613,6 @@ public abstract class SqlOperatorBaseTest {
    */
   @Test public void testJdbcFn() {
     tester.setFor(new SqlJdbcFunctionCall("dummy"));
-    CalcitePrincipalFairy.INSTANCE.register(CalcitePrincipalImpl.fromName("sa"));
 
     // There follows one test for each function in appendix C of the JDBC
     // 3.0 specification. The test is 'if-false'd out if the function is
@@ -4683,19 +4680,16 @@ public abstract class SqlOperatorBaseTest {
 
   @Test public void testUserFunc() {
     tester.setFor(SqlStdOperatorTable.USER, VM_FENNEL);
-    CalcitePrincipalFairy.INSTANCE.register(CalcitePrincipalImpl.fromName("sa"));
     tester.checkString("USER", "sa", "VARCHAR(2000) NOT NULL");
   }
 
   @Test public void testCurrentUserFunc() {
     tester.setFor(SqlStdOperatorTable.CURRENT_USER, VM_FENNEL);
-    CalcitePrincipalFairy.INSTANCE.register(CalcitePrincipalImpl.fromName("sa"));
     tester.checkString("CURRENT_USER", "sa", "VARCHAR(2000) NOT NULL");
   }
 
   @Test public void testSessionUserFunc() {
     tester.setFor(SqlStdOperatorTable.SESSION_USER, VM_FENNEL);
-    CalcitePrincipalFairy.INSTANCE.register(CalcitePrincipalImpl.fromName("sa"));
     tester.checkString("SESSION_USER", "sa", "VARCHAR(2000) NOT NULL");
   }
 

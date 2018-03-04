@@ -17,7 +17,6 @@
 package org.apache.calcite.prepare;
 
 import org.apache.calcite.DataContext;
-import org.apache.calcite.access.CalcitePrincipalFairy;
 import org.apache.calcite.adapter.enumerable.EnumerableBindable;
 import org.apache.calcite.adapter.enumerable.EnumerableCalc;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
@@ -273,7 +272,6 @@ public class CalcitePrepareImpl implements CalcitePrepare {
    * {@link #analyzeView}. */
   private ParseResult parse_(Context context, String sql, boolean convert,
       boolean analyze, boolean fail) {
-    CalcitePrincipalFairy.INSTANCE.register(context.getPrincipal());
     final JavaTypeFactory typeFactory = context.getTypeFactory();
     CalciteCatalogReader catalogReader =
         new CalciteCatalogReader(
@@ -617,7 +615,6 @@ public class CalcitePrepareImpl implements CalcitePrepare {
       Query<T> query,
       Type elementType,
       long maxRowCount) {
-    CalcitePrincipalFairy.INSTANCE.register(context.getPrincipal());
     if (SIMPLE_SQLS.contains(query.sql)) {
       return simplePrepare(context, query.sql);
     }
