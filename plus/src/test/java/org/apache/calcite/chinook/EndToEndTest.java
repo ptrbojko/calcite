@@ -35,19 +35,6 @@ public class EndToEndTest extends QuidemTest {
     super(path);
   }
 
-  /** Runs a test from the command line.
-   *
-   * <p>For example:
-   *
-   * <blockquote>
-   *   <code>java EndToEndTest sql/basic.iq</code>
-   * </blockquote> */
-  public static void main(String[] args) throws Exception {
-    for (String arg : args) {
-      new EndToEndTest(arg).test();
-    }
-  }
-
   /** For {@link Parameterized} runner. */
   @Parameterized.Parameters(name = "{index}: quidem({0})")
   public static Collection<Object[]> data() {

@@ -3172,7 +3172,27 @@ public abstract class RelOptUtil {
    * @param relBuilder Factory to create project operator
    */
   public static RelNode pushDownJoinConditions(Join originalJoin,
-      RelBuilder relBuilder) {
+                                               RelBuilder relBuilder) {
+    return pushDownJoinConditions(originalJoin, relBuilder, (f, t) -> {
+    });
+  }
+
+
+  /**
+   * Pushes down expressions in "equal" join condition. Notifies caller about RelNode swaps in a
+   * join, via customize consumer.
+   *
+   * <p>For example, given
+   * "emp JOIN dept ON emp.deptno + 1 = dept.deptno", adds a project above
+   * "emp" that computes the expression
+   * "emp.deptno + 1". The resulting join condition is a simple combination
+   * of AND, equals, and input fields, plus the remaining non-equal conditions.
+   *
+   * @param originalJoin Join whose condition is to be pushed down
+   * @param relBuilder Factory to create project operator
+   */
+  public static RelNode pushDownJoinConditions(Join originalJoin,
+      RelBuilder relBuilder, RelNodeReplaceConsumer relNodeReplaceConsumer) {
     RexNode joinCond = originalJoin.getCondition();
     final JoinRelType joinType = originalJoin.getJoinType();
 
@@ -3259,7 +3279,11 @@ public abstract class RelOptUtil {
               leftCount, leftCount + extraLeftExprs.size(), rightCount);
       relBuilder.project(relBuilder.fields(mapping.inverse()));
     }
-    return relBuilder.build();
+    RelNode newJoin = relBuilder.build();
+    relNodeReplaceConsumer.consumeReplace(originalJoin.getLeft(), left);
+    relNodeReplaceConsumer.consumeReplace(originalJoin.getRight(), right);
+//    relNodeReplaceConsumer.consumeReplace(originalJoin, newJoin);
+    return newJoin;
   }
 
   @Deprecated // to be removed before 2.0
@@ -3769,6 +3793,13 @@ public abstract class RelOptUtil {
       this.indicator = indicator;
       this.outerJoin = outerJoin;
     }
+  }
+
+  /**
+   * Consumer for notifying about nodes conversion/swaps during ie pushing down a join.
+   */
+  public interface RelNodeReplaceConsumer {
+    void consumeReplace(RelNode from, RelNode to);
   }
 }
 

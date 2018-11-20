@@ -33,18 +33,18 @@ public class CoreQuidemTest extends QuidemTest {
     super(path);
   }
 
-  /** Runs a test from the command line.
-   *
-   * <p>For example:
-   *
-   * <blockquote>
-   *   <code>java CoreQuidemTest sql/dummy.iq</code>
-   * </blockquote> */
-  public static void main(String[] args) throws Exception {
-    for (String arg : args) {
-      new CoreQuidemTest(arg).test();
-    }
-  }
+//  /** Runs a test from the command line.
+//   *
+//   * <p>For example:
+//   *
+//   * <blockquote>
+//   *   <code>java CoreQuidemTest sql/dummy.iq</code>
+//   * </blockquote> */
+//  public static void main(String[] args) throws Exception {
+//    for (String arg : args) {
+//      new CoreQuidemTest(arg).test();
+//    }
+//  }
 
   /** For {@link Parameterized} runner. */
   @Parameterized.Parameters(name = "{index}: quidem({0})")

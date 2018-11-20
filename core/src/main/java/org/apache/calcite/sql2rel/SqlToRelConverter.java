@@ -28,12 +28,14 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.ViewExpanders;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.prepare.RelOptTableImpl;
+import org.apache.calcite.rel.BiRel;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Collect;
@@ -172,6 +174,8 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.trace.CalciteTrace;
 
+import org.apache.commons.lang.mutable.MutableInt;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
@@ -198,6 +202,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -2425,7 +2430,24 @@ public class SqlToRelConverter {
         (Join) RelFactories.DEFAULT_JOIN_FACTORY.createJoin(leftRel, rightRel,
             joinCond, ImmutableSet.of(), joinType, false);
 
-    return RelOptUtil.pushDownJoinConditions(originalJoin, relBuilder);
+    return RelOptUtil.pushDownJoinConditions(originalJoin, relBuilder, this::addLeavesIfNeeded);
+  }
+
+  private void addLeavesIfNeeded(RelNode from, RelNode to) {
+    if (leaves.contains(from) && !leaves.contains(to)) {
+      final AtomicBoolean deepLeaveExist = new AtomicBoolean(false);
+      to.accept(new RelShuttleImpl() {
+        @Override protected RelNode visitChild(RelNode parent, int i, RelNode child) {
+          if (leaves.contains(child)) {
+            deepLeaveExist.set(true);
+          }
+          return super.visitChild(parent, i, child);
+        }
+      });
+      if (!deepLeaveExist.get()) {
+        leaves.add(to);
+      }
+    }
   }
 
   private CorrelationUse getCorrelationUse(Blackboard bb, final RelNode r0) {
@@ -3653,11 +3675,11 @@ public class SqlToRelConverter {
   protected RexNode adjustInputRef(
       Blackboard bb,
       RexInputRef inputRef) {
-    RelDataTypeField field = bb.getRootField(inputRef);
-    if (field != null) {
+    Blackboard.PathFromInput path = bb.getRootField(inputRef);
+    if (path != null) {
       return rexBuilder.makeInputRef(
-          field.getType(),
-          inputRef.getIndex());
+          path.getFieldType(),
+          path.getIndex());
     }
     return inputRef;
   }
@@ -4323,45 +4345,123 @@ public class SqlToRelConverter {
           false);
     }
 
-    RelDataTypeField getRootField(RexInputRef inputRef) {
+    PathFromInput getRootField(RexInputRef inputRef) {
       if (inputs == null) {
         return null;
       }
       int fieldOffset = inputRef.getIndex();
-      for (RelNode input : inputs) {
+      List<Pair<RelNode, Integer>> relOffsetList = new ArrayList<>();
+      flatten(inputs, getSystemFields().size(), new MutableInt(0), relOffsetList);
+      for (Pair<RelNode, Integer> pair : relOffsetList) {
+        RelNode input = pair.left;
         RelDataType rowType = input.getRowType();
         if (rowType == null) {
           // TODO:  remove this once leastRestrictive
           // is correctly implemented
           return null;
         }
-        if (fieldOffset < rowType.getFieldCount()) {
-          return rowType.getFieldList().get(fieldOffset);
+        if (fieldOffset - pair.right < rowType.getFieldCount()) {
+          PathFromInput path = findPathFromInputs(inputs, input, fieldOffset - pair.right);
+          if (path == null) {
+            throw new RuntimeException(":(");
+          }
+          return path;
         }
-        fieldOffset -= rowType.getFieldCount();
       }
       throw new AssertionError();
+    }
+
+    private PathFromInput findPathFromInputs(List<RelNode> inputs, RelNode leaf, int fieldNo) {
+      int offset = 0;
+      for (int l = 0; l < inputs.size(); l++) {
+        int transitiveIndex = findPathFromSpecifixRoot(inputs.get(l), leaf, fieldNo);
+        if (transitiveIndex < 0) {
+          offset += inputs.get(l).getRowType().getFieldCount();
+        } else {
+          return new PathFromInput(inputs.get(l), offset, transitiveIndex);
+        }
+      }
+
+      return null;
+    }
+
+    /**
+     * Named result for finding a root field with some helper methods
+     */
+    private class PathFromInput {
+
+      private final RelNode node;
+      private final int offset;
+      private final int index;
+
+      PathFromInput(RelNode relNode, int offset, int transitiveIndex) {
+        this.node = relNode;
+        this.offset = offset;
+        this.index = transitiveIndex;
+      }
+
+
+      public RelDataType getFieldType() {
+        return node.getRowType().getFieldList().get(index).getType();
+      }
+
+      public int getIndex() {
+        return offset + index;
+      }
+    }
+
+    private int findPathFromSpecifixRoot(RelNode root, RelNode leaf, int fieldNo) {
+      if (root == leaf) {
+        return fieldNo;
+      }
+      int offset = 0;
+      for (int l = 0; l < root.getInputs().size(); l++) {
+        int transitiveIndex = findPathFromSpecifixRoot(root.getInput(l), leaf, fieldNo);
+        if (transitiveIndex < 0) {
+          offset += root.getInput(l).getRowType().getFieldCount();
+        } else {
+          return findReferenceInRex(root, offset + transitiveIndex);
+        }
+      }
+
+      return -1;
+    }
+
+    @SuppressWarnings("deprecation")
+    private int findReferenceInRex(RelNode root, int i) {
+      // for joins
+      if (root instanceof BiRel || (root instanceof SingleRel && !(root instanceof Project))) {
+        return i;
+      }
+      List<RexNode> exps = root.getChildExps();
+      for (int l = 0; l < exps.size(); l++) {
+        RexNode exp = exps.get(l);
+        if (exp instanceof RexInputRef && ((RexInputRef) exp).getIndex() == i) {
+          return l;
+        }
+      }
+      return -1;
     }
 
     public void flatten(
         List<RelNode> rels,
         int systemFieldCount,
-        int[] start,
+        MutableInt offsetInLeaves,
         List<Pair<RelNode, Integer>> relOffsetList) {
       for (RelNode rel : rels) {
         if (leaves.contains(rel) || rel instanceof LogicalMatch) {
           relOffsetList.add(
-              Pair.of(rel, start[0]));
-          start[0] += rel.getRowType().getFieldCount();
+              Pair.of(rel, offsetInLeaves.intValue()));
+          offsetInLeaves.add(rel.getRowType().getFieldCount());
         } else {
           if (rel instanceof LogicalJoin
               || rel instanceof LogicalAggregate) {
-            start[0] += systemFieldCount;
+            offsetInLeaves.add(systemFieldCount);
           }
           flatten(
               rel.getInputs(),
               systemFieldCount,
-              start,
+              offsetInLeaves,
               relOffsetList);
         }
       }
@@ -5167,7 +5267,7 @@ public class SqlToRelConverter {
      * @param systemFieldCount Number of system fields
      */
     LookupContext(Blackboard bb, List<RelNode> rels, int systemFieldCount) {
-      bb.flatten(rels, systemFieldCount, new int[]{0}, relOffsetList);
+      bb.flatten(rels, systemFieldCount, new MutableInt(0), relOffsetList);
     }
 
     /**
